@@ -46,14 +46,21 @@ void setup() {
  WiFiMulti.addAP("CamelloVTR","Cieloestrellado37");
  display.display();
 }
-int counter = 0;
+
+bool found = false;
+bool endfound = false;
+
 void loop() {
-counter = 0;
+int counter = 0;
+int counterstop = 0;
+int counterfinal = 999;
+endfound = false;
+found = false;
   // wait for WiFi connection
   if ((WiFiMulti.run() == WL_CONNECTED)) {
 
     std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
-
+   
     bool mfln = client->probeMaxFragmentLength("jkanime.net", 443, 1024);
     Serial.printf("\nConnecting to https://jkanime.net\n");
     Serial.printf("Maximum fragment Length negotiation supported: %s\n", mfln ? "yes" : "no");
@@ -92,8 +99,7 @@ counter = 0;
           // read all data from server
           while (https.connected() && (len > 0 || len == -1)) {
 
-           if (counter == 47)
-           {break;}
+         
             // get available data size
             size_t size = client->available();
 
@@ -102,12 +108,13 @@ counter = 0;
               int c = client->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
 
               // write it to Serial
-              Serial.write(buff, c);
+           
              
               if (len > 0) {
                 len -= c;
               }
               String allbuffer = String((char*) buff);
+             
              display.clearDisplay();
               Serial.println(counter);
               display.setTextSize(1);             // Normal 1:1 pixel scale
@@ -117,6 +124,22 @@ counter = 0;
   display.println(allbuffer.length());
   
    display.println(counter);
+    if (allbuffer.indexOf("listadoanime-home") != -1)
+    {found = true;
+      counterstop = counter;}
+                 if(found == true)
+              { display.print("encontrado:" );
+                display.println(counterstop);
+                Serial.print("encontrado:");
+                Serial.println(counterstop);
+                   Serial.write(buff, c);
+                }
+    if (allbuffer.indexOf("spad") != -1)
+    {counterfinal = counter;}
+  
+  if (counter == counterfinal)
+           {break;}
+                
    
   counter++;
   /*if (allbuffer.indexOf("spad") != -1)
