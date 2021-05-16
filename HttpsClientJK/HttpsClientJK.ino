@@ -190,7 +190,7 @@ int counterserie = 0;
           {
                display.clearDisplay();
               display.setTextSize(1);             // Normal 1:1 pixel scale
-  display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);        // Draw white text
+  display.setTextColor(SSD1306_WHITE);        // Draw white text
   display.setCursor(0,20);             // Start at top-left corner
             String tempshow = series[x];
              tempshow.replace("https://jkanime.net/"," ");
