@@ -24,6 +24,15 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 ESP8266WiFiMulti WiFiMulti;
 
+int strpos(char *hay, char *needle, int offset)
+{
+   char haystack[strlen(hay)];
+   strncpy(haystack, hay+offset, strlen(hay)-offset);
+   char *p = strstr(haystack, needle);
+   if (p)
+      return p - haystack+offset;
+   return -1;
+}
 void setup() {
 
   Serial.begin(115200);
@@ -45,17 +54,24 @@ void setup() {
   WiFi.mode(WIFI_STA);
  WiFiMulti.addAP("CamelloVTR","Cieloestrellado37");
  display.display();
+ display.clearDisplay();
 }
 
 bool found = false;
 bool endfound = false;
+bool firstime = true;
+
 
 void loop() {
+ String series[30];
 int counter = 0;
 int counterstop = 0;
 int counterfinal = 999;
 endfound = false;
 found = false;
+int counterserie = 0;
+  String allbuffer = "";
+
   // wait for WiFi connection
   if ((WiFiMulti.run() == WL_CONNECTED)) {
 
@@ -91,14 +107,13 @@ found = false;
 
           // get lenght of document (is -1 when Server sends no Content-Length header)
           int len = https.getSize();
-         Serial.println(len);
-
+         
           // create buffer for read
           static uint8_t buff[1024] = { 0 };
 
           // read all data from server
           while (https.connected() && (len > 0 || len == -1)) {
-
+            allbuffer = "";
          
             // get available data size
             size_t size = client->available();
@@ -113,41 +128,54 @@ found = false;
               if (len > 0) {
                 len -= c;
               }
-              String allbuffer = String((char*) buff);
+             allbuffer = String((char*) buff);
              
              display.clearDisplay();
               Serial.println(counter);
-              display.setTextSize(1);             // Normal 1:1 pixel scale
+              display.setTextSize(2);             // Normal 1:1 pixel scale
   display.setTextColor(SSD1306_WHITE);        // Draw white text
   display.setCursor(0,0);             // Start at top-left corner
-  display.print("Size: ");
-  display.println(allbuffer.length());
+
   
-   display.println(counter);
+   display.println("RipNotify");
     if (allbuffer.indexOf("listadoanime-home") != -1)
     {found = true;
       counterstop = counter;}
                  if(found == true)
-              { display.print("encontrado:" );
-                display.println(counterstop);
+              { //display.print("encontrado:" );
+                //display.println(counterstop);
                 Serial.print("encontrado:");
                 Serial.println(counterstop);
-                   Serial.write(buff, c);
+                   //Serial.write(buff,c);
+                   /*if (firstime == true)
+                   {temporal = allbuffer;
+                    firstime = false;
+                   }*/
+                   int scrap1,scrap2;
+          scrap1 = allbuffer.indexOf("bloqq");
+          scrap1 = allbuffer.lastIndexOf("href=",scrap1)+6;
+          scrap2 = allbuffer.indexOf('"',scrap1); 
+          String title = allbuffer.substring(scrap1, scrap2);
+          series[counterserie] = title;
+          counterserie++;
+          //display.println(title);
+         // Serial.println(title);      
+                
                 }
-    if (allbuffer.indexOf("spad") != -1)
-    {counterfinal = counter;}
-  
-  if (counter == counterfinal)
-           {break;}
+ 
+    
+      
+  if (allbuffer.indexOf("spad") != -1)
+           {if (counter != 0)
+            { Serial.println("que es esta wea?");
+              break;}}
                 
    
   counter++;
-  /*if (allbuffer.indexOf("spad") != -1)
-             {break;}*/
+ 
              }
 
-          
-  delay(1);
+   
   
           
 
@@ -155,10 +183,31 @@ found = false;
 
   display.display();
           }
-          Serial.println();
-          Serial.println();
+
+         for(int x = 0 ;x < 29; x++)
+         {
+          if(series[x].indexOf("https://jkanime") != -1)
+          {
+               display.clearDisplay();
+              display.setTextSize(1);             // Normal 1:1 pixel scale
+  display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);        // Draw white text
+  display.setCursor(0,20);             // Start at top-left corner
+            String tempshow = series[x];
+             tempshow.replace("https://jkanime.net/"," ");
+             tempshow.replace("/"," ");
+             tempshow.replace("-"," ");
+             tempshow.toUpperCase();
+            Serial.println(tempshow);
+             display.println(tempshow);
+             delay(2000);
+            display.display();
+            
+            }
+         
+         }
           Serial.println("[HTTPS] connection closed or file end.\n");
-        
+       
+        display.display();
         }
       } else {
         Serial.printf("[HTTPS] GET... failed, error: %s\n", https.errorToString(httpCode).c_str());
@@ -170,6 +219,6 @@ found = false;
     }
   }
 
-  Serial.println("Wait 10s before the next round...");
+  Serial.println("Wait 30s before the next round...");
   delay(5000);
 }
